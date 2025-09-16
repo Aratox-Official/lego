@@ -20,13 +20,29 @@
     background: rgba(255,255,255,0.8);
     padding: 10px;
     border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  button {
-    margin: 5px;
-    padding: 10px;
-    font-size: 16px;
+  #direction-buttons {
+    display: grid;
+    grid-template-columns: 50px 50px 50px;
+    grid-template-rows: 50px 50px 50px;
+    gap: 5px;
+    margin-bottom: 10px;
   }
+
+  #direction-buttons button {
+    width: 50px;
+    height: 50px;
+    font-size: 14px;
+  }
+
+  #up { grid-area: 1 / 2 / 2 / 3; }
+  #down { grid-area: 3 / 2 / 4 / 3; }
+  #left { grid-area: 2 / 1 / 3 / 2; }
+  #right { grid-area: 2 / 3 / 3 / 4; }
 
   #scene-container {
     width: 100vw;
@@ -71,8 +87,12 @@
 <body>
 
 <div id="controls">
-  <button id="rotateLeft">Rotate Left</button>
-  <button id="rotateRight">Rotate Right</button>
+  <div id="direction-buttons">
+    <button id="up">↑</button>
+    <button id="left">←</button>
+    <button id="down">↓</button>
+    <button id="right">→</button>
+  </div>
   <p>Add blocks by clicking on the top Lego block.</p>
 </div>
 
@@ -84,15 +104,31 @@
   const scene = document.getElementById('scene');
 
   let rotationY = 0;
+  let rotationX = 0;
 
-  document.getElementById('rotateLeft').addEventListener('click', () => {
+  document.getElementById('rotateLeft')?.addEventListener('click', () => {
     rotationY -= 15;
-    scene.style.transform = `rotateY(${rotationY}deg)`;
+    scene.style.transform = `rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
   });
-
-  document.getElementById('rotateRight').addEventListener('click', () => {
+  document.getElementById('rotateRight')?.addEventListener('click', () => {
     rotationY += 15;
-    scene.style.transform = `rotateY(${rotationY}deg)`;
+    scene.style.transform = `rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
+  });
+  document.getElementById('up').addEventListener('click', () => {
+    rotationX -= 15;
+    scene.style.transform = `rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
+  });
+  document.getElementById('down').addEventListener('click', () => {
+    rotationX += 15;
+    scene.style.transform = `rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
+  });
+  document.getElementById('left').addEventListener('click', () => {
+    rotationY -= 15;
+    scene.style.transform = `rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
+  });
+  document.getElementById('right').addEventListener('click', () => {
+    rotationY += 15;
+    scene.style.transform = `rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
   });
 
   const gridSize = 10;
@@ -176,7 +212,8 @@ scene.addEventListener('click', (e) => {
     });
     const maxZ = Math.max(...zValues);
 
-    if (Math.abs((parseFloat(e.target.style.transform.replace(/[^\d.-]/g, '')) || 0) - maxZ) < 0.1) {
+    const clickedZ = (parseFloat(e.target.style.transform.replace(/[^\d.-]/g, '')) || 0);
+    if (Math.abs(clickedZ - maxZ) < 0.1) {
       if (currentHeight < maxHeight) {
         blocks[key] = currentHeight + 1;
         createBlock(x, y, currentHeight + 1);
