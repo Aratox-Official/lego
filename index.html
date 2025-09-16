@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simple 3D LEGO Builder</title>
+<style>
+  body {
+    margin: 0;
+    background: #222;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
+
+  #controls {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    background: rgba(255,255,255,0.8);
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  button {
+    margin: 5px;
+    padding: 10px;
+    font-size: 16px;
+  }
+
+  #scene-container {
+    width: 100vw;
+    height: 100vh;
+    perspective: 1000px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #scene {
+    width: 600px;
+    height: 600px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s;
+  }
+
+  .block {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #ff5733;
+    border: 2px solid #fff;
+    box-sizing: border-box;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <button id="rotateLeft">Rotate Left</button>
+  <button id="rotateRight">Rotate Right</button>
+  <p>Add blocks by clicking on the grid below.</p>
+</div>
+
+<div id="scene-container">
+  <div id="scene"></div>
+</div>
+
+<script>
+  const scene = document.getElementById('scene');
+  const sceneContainer = document.getElementById('scene-container');
+
+  let rotationY = 0;
+
+  document.getElementById('rotateLeft').addEventListener('click', () => {
+    rotationY -= 15;
+    scene.style.transform = `rotateY(${rotationY}deg)`;
+  });
+
+  document.getElementById('rotateRight').addEventListener('click', () => {
+    rotationY += 15;
+    scene.style.transform = `rotateY(${rotationY}deg)`;
+  });
+
+  const gridSize = 10;
+  const blockSize = 40;
+  const maxHeight = 5;
+
+  const blocks = {};
+  for (let x = 0; x < gridSize; x++) {
+    for (let y = 0; y < gridSize; y++) {
+      const block = document.createElement('div');
+      block.className = 'block';
+      block.style.left = `${x * blockSize}px`;
+      block.style.top = `${y * blockSize}px`;
+      block.dataset.x = x;
+      block.dataset.y = y;
+      block.dataset.z = 0;
+      scene.appendChild(block);
+    }
+  }
+
+  scene.addEventListener('click', (e) => {
+    if (e.target.classList.contains('block')) {
+      const x = parseInt(e.target.dataset.x);
+      const y = parseInt(e.target.dataset.y);
+      const key = `${x},${y}`;
+      const currentHeight = blocks[key] || 0;
+
+      if (currentHeight < maxHeight) {
+        blocks[key] = currentHeight + 1;
+
+        const newBlock = document.createElement('div');
+        newBlock.className = 'block';
+
+        newBlock.style.left = `${x * blockSize}px`;
+        newBlock.style.top = `${y * blockSize}px`;
+
+        const zIndex = blocks[key];
+        newBlock.style.transform = `translateZ(${-zIndex * 20}px)`;
+
+        newBlock.style.background = `hsl(${(x + y + zIndex) * 30 % 360}, 70%, 60%)`;
+
+        scene.appendChild(newBlock);
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
