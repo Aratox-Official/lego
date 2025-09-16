@@ -53,6 +53,18 @@
     border: 2px solid #fff;
     box-sizing: border-box;
     border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .side-wall {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(0,0,0,0.3);
+    box-sizing: border-box;
+    border-radius: 2px;
+    cursor: pointer;
   }
 </style>
 </head>
@@ -61,7 +73,7 @@
 <div id="controls">
   <button id="rotateLeft">Rotate Left</button>
   <button id="rotateRight">Rotate Right</button>
-  <p>Add blocks by clicking on the grid below.</p>
+  <p>Add blocks by clicking on the top Lego block.</p>
 </div>
 
 <div id="scene-container">
@@ -89,45 +101,96 @@
 
   const blocks = {};
 
-  for (let x = 0; x < gridSize; x++) {
-    for (let y = 0; y < gridSize; y++) {
-      const gridBlock = document.createElement('div');
-      gridBlock.className = 'block';
-      gridBlock.style.left = `${x * blockSize}px`;
-      gridBlock.style.top = `${y * blockSize}px`;
-      gridBlock.dataset.x = x;
-      gridBlock.dataset.y = y;
-      scene.appendChild(gridBlock);
+function createBlock(x, y, height) {
+  const block = document.createElement('div');
+  block.className = 'block';
+
+  block.style.left = `${x * blockSize}px`;
+  block.style.top = `${y * blockSize}px`;
+
+  block.style.transform = `translateZ(${height * 20}px)`;
+  block.style.zIndex = height;
+
+  block.dataset.x = x;
+  block.dataset.y = y;
+
+  block.style.background = `hsl(${(x + y + height) * 30 % 360}, 70%, 60%)`;
+
+  scene.appendChild(block);
+
+  const walls = ['left', 'right', 'front', 'back'];
+  walls.forEach(side => {
+    const wall = document.createElement('div');
+    wall.className = 'side-wall';
+
+    switch (side) {
+      case 'left':
+        wall.style.width = '4px';
+        wall.style.height = '40px';
+        wall.style.left = '0px';
+        wall.style.top = '0px';
+        wall.style.transform = `translateX(-2px) translateZ(${height * 20}px)`;
+        break;
+      case 'right':
+        wall.style.width = '4px';
+        wall.style.height = '40px';
+        wall.style.right = '0px';
+        wall.style.top = '0px';
+        wall.style.transform = `translateX(2px) translateZ(${height * 20}px)`;
+        break;
+      case 'front':
+        wall.style.width = '40px';
+        wall.style.height = '4px';
+        wall.style.left = '0px';
+        wall.style.bottom = '0px';
+        wall.style.transform = `translateZ(${height * 20}px)`;
+        break;
+      case 'back':
+        wall.style.width = '40px';
+        wall.style.height = '4px';
+        wall.style.left = '0px';
+        wall.style.top = '0px';
+        wall.style.transform = `translateZ(${height * 20}px)`;
+        break;
     }
-  }
 
-  scene.addEventListener('click', (e) => {
-    if (e.target.classList.contains('block')) {
-      const x = parseInt(e.target.dataset.x);
-      const y = parseInt(e.target.dataset.y);
-      const key = `${x},${y}`;
-      const currentHeight = blocks[key] || 0;
+    scene.appendChild(wall);
+  });
+}
 
+scene.addEventListener('click', (e) => {
+  if (e.target.classList.contains('block') || e.target.classList.contains('side-wall')) {
+    const x = parseInt(e.target.dataset.x);
+    const y = parseInt(e.target.dataset.y);
+    const key = `${x},${y}`;
+    const currentHeight = blocks[key] || 0;
+
+    const blocksAtPos = Array.from(scene.children).filter(child => {
+      return child.dataset && parseInt(child.dataset.x) === x && parseInt(child.dataset.y) === y;
+    });
+
+    const zValues = blocksAtPos.map(b => {
+      const t = b.style.transform;
+      const match = t.match(/translateZ\((-?\d+\.?\d*)px\)/);
+      return match ? parseFloat(match[1]) : 0;
+    });
+    const maxZ = Math.max(...zValues);
+
+    if (Math.abs((parseFloat(e.target.style.transform.replace(/[^\d.-]/g, '')) || 0) - maxZ) < 0.1) {
       if (currentHeight < maxHeight) {
-        const newHeight = currentHeight + 1;
-        blocks[key] = newHeight;
-
-        const newBlock = document.createElement('div');
-        newBlock.className = 'block';
-
-        newBlock.style.left = `${x * blockSize}px`;
-        newBlock.style.top = `${y * blockSize}px`;
-
-        newBlock.style.transform = `translateZ(${newHeight * 20}px)`;
-
-        newBlock.style.zIndex = newHeight;
-
-        newBlock.style.background = `hsl(${(x + y + newHeight) * 30 % 360}, 70%, 60%)`;
-
-        scene.appendChild(newBlock);
+        blocks[key] = currentHeight + 1;
+        createBlock(x, y, currentHeight + 1);
       }
     }
-  });
+  }
+});
+
+for (let x = 0; x < gridSize; x++) {
+  for (let y = 0; y < gridSize; y++) {
+    createBlock(x, y, 0);
+    blocks[`${x},${y}`] = 0;
+  }
+}
 </script>
 
 </body>
