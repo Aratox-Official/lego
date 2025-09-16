@@ -70,7 +70,6 @@
 
 <script>
   const scene = document.getElementById('scene');
-  const sceneContainer = document.getElementById('scene-container');
 
   let rotationY = 0;
 
@@ -89,16 +88,16 @@
   const maxHeight = 5;
 
   const blocks = {};
+
   for (let x = 0; x < gridSize; x++) {
     for (let y = 0; y < gridSize; y++) {
-      const block = document.createElement('div');
-      block.className = 'block';
-      block.style.left = `${x * blockSize}px`;
-      block.style.top = `${y * blockSize}px`;
-      block.dataset.x = x;
-      block.dataset.y = y;
-      block.dataset.z = 0;
-      scene.appendChild(block);
+      const gridBlock = document.createElement('div');
+      gridBlock.className = 'block';
+      gridBlock.style.left = `${x * blockSize}px`;
+      gridBlock.style.top = `${y * blockSize}px`;
+      gridBlock.dataset.x = x;
+      gridBlock.dataset.y = y;
+      scene.appendChild(gridBlock);
     }
   }
 
@@ -110,7 +109,8 @@
       const currentHeight = blocks[key] || 0;
 
       if (currentHeight < maxHeight) {
-        blocks[key] = currentHeight + 1;
+        const newHeight = currentHeight + 1;
+        blocks[key] = newHeight;
 
         const newBlock = document.createElement('div');
         newBlock.className = 'block';
@@ -118,10 +118,11 @@
         newBlock.style.left = `${x * blockSize}px`;
         newBlock.style.top = `${y * blockSize}px`;
 
-        const zIndex = blocks[key];
-        newBlock.style.transform = `translateZ(${-zIndex * 20}px)`;
+        newBlock.style.transform = `translateZ(${-newHeight * 20}px)`;
 
-        newBlock.style.background = `hsl(${(x + y + zIndex) * 30 % 360}, 70%, 60%)`;
+        newBlock.style.zIndex = newHeight;
+
+        newBlock.style.background = `hsl(${(x + y + newHeight) * 30 % 360}, 70%, 60%)`;
 
         scene.appendChild(newBlock);
       }
