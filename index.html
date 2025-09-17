@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Simple 3D LEGO Builder</title>
+<title>3D LEGO Builder Fixed</title>
 <style>
   body {
     margin: 0;
@@ -147,8 +147,8 @@
   
   for (let x = 0; x < gridSize; x++) {
     for (let y = 0; y < gridSize; y++) {
-      createBlock(x, y, 0, 'front');
-      blocks[`${x},${y}`] = 0;
+      blocks[`${x},${y}`] = { front: 1, back: 1 };
+      createBlock(x, y, 1, 'front');
     }
   }
 
@@ -161,10 +161,9 @@
 
     if (side === 'front') {
       block.style.transform = `translateZ(${height * 20}px)`;
-    } else if (side === 'back') {
+    } else {
       block.style.transform = `translateZ(-${height * 20}px)`;
     }
-
     block.style.zIndex = height;
     block.dataset.x = x;
     block.dataset.y = y;
@@ -217,38 +216,24 @@ scene.addEventListener('click', (e) => {
   if (e.target.classList.contains('block') || e.target.classList.contains('side-wall')) {
     const x = parseInt(e.target.dataset.x);
     const y = parseInt(e.target.dataset.y);
-    const currentHeight = blocks[`${x},${y}`] || 0;
+    const positionKey = `${x},${y}`;
+    const currentHeights = blocks[positionKey];
+    const currentHeight = currentHeights[buildSide] || 1;
 
     const t = e.target.style.transform;
     const match = t.match(/translateZ\((-?\d+\.?\d*)px\)/);
     const clickedZ = match ? parseFloat(match[1]) : 0;
-    const isFront = clickedZ >= 0;
 
     const sideToBuild = buildSide;
 
-    let maxZ = 0;
-    Object.keys(blocks).forEach(k => {
-      const [bx, by] = k.split(',').map(Number);
-      if (bx === x && by === y) {
-        const child = Array.from(scene.children).find(c => 
-          c.dataset && c.dataset.x === String(x) && c.dataset.y === String(y)
-        );
-        if (child) {
-          const t2 = child.style.transform;
-          const m = t2.match(/translateZ\((-?\d+\.?\d*)px\)/);
-          if (m) {
-            const zVal = parseFloat(m[1]);
-            if (zVal > maxZ) maxZ = zVal;
-          }
-        }
-      }
-    });
+    const maxHeightOnSide = currentHeights[sideToBuild] || 1;
 
-    const newHeight = currentHeight + 1;
-    if (newHeight <= maxHeight) {
-      blocks[`${x},${y}`] = newHeight;
-      createBlock(x, y, newHeight, sideToBuild);
-    }
+    const newHeight = Math.min(maxHeightOnSide + 1, maxHeight);
+
+    currentHeights[sideToBuild] = newHeight;
+    blocks[positionKey] = currentHeights;
+
+    createBlock(x, y, newHeight, sideToBuild);
   }
 });
 </script>
