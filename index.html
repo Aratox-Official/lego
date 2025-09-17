@@ -44,7 +44,6 @@
   #left { grid-area: 2 / 1 / 3 / 2; }
   #right { grid-area: 2 / 3 / 3 / 4; }
 
-  /* Toggle button style */
   #build-side-toggle {
     margin-top: 8px;
     padding: 6px 12px;
@@ -116,7 +115,7 @@
   let rotationY = 0;
   let rotationX = 0;
   let buildSide = 'front';
-
+  
   buildSideToggleBtn.addEventListener('click', () => {
     buildSide = (buildSide === 'front') ? 'back' : 'front';
     buildSideLabel.textContent = buildSide;
@@ -146,6 +145,13 @@
 
   const blocks = {};
   
+  for (let x = 0; x < gridSize; x++) {
+    for (let y = 0; y < gridSize; y++) {
+      createBlock(x, y, 0, 'front');
+      blocks[`${x},${y}`] = 0;
+    }
+  }
+
   function createBlock(x, y, height, side) {
     const block = document.createElement('div');
     block.className = 'block';
@@ -203,16 +209,8 @@
           wall.style.transform = `translateZ(-${height * 20}px)`;
           break;
       }
-
       scene.appendChild(wall);
     });
-  }
-
-  for (let x = 0; x < gridSize; x++) {
-    for (let y = 0; y < gridSize; y++) {
-      createBlock(x, y, 0, 'front');
-      blocks[`${x},${y}`] = 0;
-    }
   }
 
 scene.addEventListener('click', (e) => {
@@ -228,29 +226,28 @@ scene.addEventListener('click', (e) => {
 
     const sideToBuild = buildSide;
 
-    const existingBlocks = Object.keys(blocks).filter(k => {
-      const [bx, by] = k.split(',').map(Number);
-      return bx === x && by === y;
-    });
-
     let maxZ = 0;
-    existingBlocks.forEach(k => {
-      const child = Array.from(scene.children).find(c => 
-        c.dataset && c.dataset.x === String(x) && c.dataset.y === String(y)
-      );
-      if (child) {
-        const t2 = child.style.transform;
-        const m = t2.match(/translateZ\((-?\d+\.?\d*)px\)/);
-        if (m) {
-          const zVal = parseFloat(m[1]);
-          if (zVal > maxZ) maxZ = zVal;
+    Object.keys(blocks).forEach(k => {
+      const [bx, by] = k.split(',').map(Number);
+      if (bx === x && by === y) {
+        const child = Array.from(scene.children).find(c => 
+          c.dataset && c.dataset.x === String(x) && c.dataset.y === String(y)
+        );
+        if (child) {
+          const t2 = child.style.transform;
+          const m = t2.match(/translateZ\((-?\d+\.?\d*)px\)/);
+          if (m) {
+            const zVal = parseFloat(m[1]);
+            if (zVal > maxZ) maxZ = zVal;
+          }
         }
       }
     });
 
-    if (currentHeight < maxHeight) {
-      blocks[`${x},${y}`] = currentHeight + 1;
-      createBlock(x, y, currentHeight + 1, sideToBuild);
+    const newHeight = currentHeight + 1;
+    if (newHeight <= maxHeight) {
+      blocks[`${x},${y}`] = newHeight;
+      createBlock(x, y, newHeight, sideToBuild);
     }
   }
 });
