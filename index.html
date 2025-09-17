@@ -44,6 +44,13 @@
   #left { grid-area: 2 / 1 / 3 / 2; }
   #right { grid-area: 2 / 3 / 3 / 4; }
 
+  #build-side-toggle {
+    margin-top: 8px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
   #scene-container {
     width: 100vw;
     height: 100vh;
@@ -77,10 +84,8 @@
     width: 40px;
     height: 40px;
     background: transparent;
-    /* border: 1px solid rgba(0,0,0,0.3); */
     box-sizing: border-box;
     border-radius: 2px;
-    cursor: pointer;
   }
 </style>
 </head>
@@ -93,7 +98,9 @@
     <button id="down">↓</button>
     <button id="right">→</button>
   </div>
-  <p>Add blocks by clicking on the top Lego block.</p>
+  <p>Add blocks by clicking on the top of a Lego block.</p>
+  <button id="build-side-toggle">Build Front</button>
+  <p>Current build side: <strong id="build-side-label">front</strong></p>
 </div>
 
 <div id="scene-container">
@@ -102,9 +109,18 @@
 
 <script>
   const scene = document.getElementById('scene');
+  const buildSideLabel = document.getElementById('build-side-label');
+  const buildSideToggleBtn = document.getElementById('build-side-toggle');
 
   let rotationY = 0;
   let rotationX = 0;
+  let buildSide = 'front';
+
+  buildSideToggleBtn.addEventListener('click', () => {
+    buildSide = (buildSide === 'front') ? 'back' : 'front';
+    buildSideLabel.textContent = buildSide;
+    buildSideToggleBtn.textContent = `Build ${buildSide === 'front' ? 'Front' : 'Back'}`;
+  });
 
   document.getElementById('up').addEventListener('click', () => {
     rotationX -= 15;
@@ -128,99 +144,116 @@
   const maxHeight = 5;
 
   const blocks = {};
+  
+  function createBlock(x, y, height, side) {
+    const block = document.createElement('div');
+    block.className = 'block';
 
-function createBlock(x, y, height) {
-  const block = document.createElement('div');
-  block.className = 'block';
+    block.style.left = `${x * blockSize}px`;
+    block.style.top = `${y * blockSize}px`;
 
-  block.style.left = `${x * blockSize}px`;
-  block.style.top = `${y * blockSize}px`;
-
-  block.style.transform = `translateZ(${height * 20}px)`;
-  block.style.zIndex = height;
-
-  block.dataset.x = x;
-  block.dataset.y = y;
-
-  block.style.background = `hsl(${(x + y + height) * 30 % 360}, 70%, 60%)`;
-
-  scene.appendChild(block);
-
-  const walls = ['left', 'right', 'front', 'back'];
-  walls.forEach(side => {
-    const wall = document.createElement('div');
-    wall.className = 'side-wall';
-
-    switch (side) {
-      case 'left':
-        wall.style.width = '4px';
-        wall.style.height = '40px';
-        wall.style.left = '0px';
-        wall.style.top = '0px';
-        wall.style.transform = `translateX(-2px) translateZ(${height * 20}px)`;
-        break;
-      case 'right':
-        wall.style.width = '4px';
-        wall.style.height = '40px';
-        wall.style.right = '0px';
-        wall.style.top = '0px';
-        wall.style.transform = `translateX(2px) translateZ(${height * 20}px)`;
-        break;
-      case 'front':
-        wall.style.width = '40px';
-        wall.style.height = '4px';
-        wall.style.left = '0px';
-        wall.style.bottom = '0px';
-        wall.style.transform = `translateZ(${height * 20}px)`;
-        break;
-      case 'back':
-        wall.style.width = '40px';
-        wall.style.height = '4px';
-        wall.style.left = '0px';
-        wall.style.top = '0px';
-        wall.style.transform = `translateZ(${height * 20}px)`;
-        break;
+    if (side === 'front') {
+      block.style.transform = `translateZ(${height * 20}px)`;
+    } else if (side === 'back') {
+      block.style.transform = `translateZ(-${height * 20}px)`;
     }
 
-    scene.appendChild(wall);
-  });
-}
+    block.style.zIndex = height;
+
+    block.dataset.x = x;
+    block.dataset.y = y;
+    block.dataset.side = side;
+
+    block.style.background = `hsl(${(x + y + height) * 30 % 360}, 70%, 60%)`;
+
+    scene.appendChild(block);
+
+    const walls = ['left', 'right', 'front', 'back'];
+    walls.forEach(sideWall => {
+      const wall = document.createElement('div');
+      wall.className = 'side-wall';
+
+      switch (sideWall) {
+        case 'left':
+          wall.style.width = '4px';
+          wall.style.height = '40px';
+          wall.style.left = '0px';
+          wall.style.top = '0px';
+          wall.style.transform = `translateX(-2px) translateZ(${height * 20}px)`;
+          break;
+        case 'right':
+          wall.style.width = '4px';
+          wall.style.height = '40px';
+          wall.style.right = '0px';
+          wall.style.top = '0px';
+          wall.style.transform = `translateX(2px) translateZ(${height * 20}px)`;
+          break;
+        case 'front':
+          wall.style.width = '40px';
+          wall.style.height = '4px';
+          wall.style.left = '0px';
+          wall.style.bottom = '0px';
+          wall.style.transform = `translateZ(${height * 20}px)`;
+          break;
+        case 'back':
+          wall.style.width = '40px';
+          wall.style.height = '4px';
+          wall.style.left = '0px';
+          wall.style.top = '0px';
+          wall.style.transform = `translateZ(-${height * 20}px)`;
+          break;
+      }
+
+      scene.appendChild(wall);
+    });
+  }
+
+  for (let x = 0; x < gridSize; x++) {
+    for (let y = 0; y < gridSize; y++) {
+      createBlock(x, y, 0, 'front');
+      blocks[`${x},${y}`] = 0;
+    }
+  }
 
 scene.addEventListener('click', (e) => {
   if (e.target.classList.contains('block') || e.target.classList.contains('side-wall')) {
     const x = parseInt(e.target.dataset.x);
     const y = parseInt(e.target.dataset.y);
-    const key = `${x},${y}`;
-    const currentHeight = blocks[key] || 0;
+    const currentHeight = blocks[`${x},${y}`] || 0;
 
-    const blocksAtPos = Array.from(scene.children).filter(child => {
-      return child.dataset && parseInt(child.dataset.x) === x && parseInt(child.dataset.y) === y;
-    });
+    const t = e.target.style.transform;
+    const match = t.match(/translateZ\((-?\d+\.?\d*)px\)/);
+    const clickedZ = match ? parseFloat(match[1]) : 0;
 
-    const zValues = blocksAtPos.map(b => {
-      const t = b.style.transform;
-      const match = t.match(/translateZ\((-?\d+\.?\d*)px\)/);
-      return match ? parseFloat(match[1]) : 0;
-    });
-    const maxZ = Math.max(...zValues);
+    const isFront = clickedZ >= 0;
 
-    const clickedZ = (parseFloat(e.target.style.transform.replace(/[^\d.-]/g, '')) || 0);
-    if (Math.abs(clickedZ - maxZ) < 0.1) {
+    if ((buildSide === 'front' && isFront) || (buildSide === 'back' && !isFront)) {
+      const existingBlocks = Object.keys(blocks).filter(k => {
+        const [bx, by] = k.split(',').map(Number);
+        return bx === x && by === y;
+      });
+
+      const zValues = existingBlocks.map(k => {
+        const child = Array.from(scene.children).find(c => 
+          c.dataset && c.dataset.x === String(x) && c.dataset.y === String(y) && c.dataset.side === (isFront ? 'front' : 'back')
+        );
+        if (child) {
+          const t2 = child.style.transform;
+          const m = t2.match(/translateZ\((-?\d+\.?\d*)px\)/);
+          return m ? parseFloat(m[1]) : 0;
+        }
+        return 0;
+      });
+      const maxZ = zValues.length ? Math.max(...zValues) : 0;
+
       if (currentHeight < maxHeight) {
-        blocks[key] = currentHeight + 1;
-        createBlock(x, y, currentHeight + 1);
+        blocks[`${x},${y}`] = currentHeight + 1;
+        createBlock(x, y, currentHeight + 1, buildSide);
       }
     }
   }
 });
 
-for (let x = 0; x < gridSize; x++) {
-  for (let y = 0; y < gridSize; y++) {
-    createBlock(x, y, 0);
-    blocks[`${x},${y}`] = 0;
-  }
-}
 </script>
-
 </body>
 </html>
